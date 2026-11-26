@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="org.example.todoappsample.HelloController" spacing="8">
+      fx:controller="org.example.todoapp.HelloController" spacing="8">
     <padding>
         <Insets top="12" right="12" bottom="12" left="12"/>
     </padding>
