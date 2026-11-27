@@ -5,6 +5,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckBox;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 
 public class HelloController {
@@ -30,6 +32,7 @@ public class HelloController {
     @FXML private Label countLabel;
     @FXML private Label messageLabel;
     @FXML private CheckBox onlyUndoneCheck;
+    @FXML private CheckBox sortByDueCheck;
     @FXML private DatePicker dueDatePicker;
     // 一覧のデータ。チェックの ON/OFF でも「変更あり」と分かるようにしておく
     private final ObservableList<TodoItem> items =
@@ -45,7 +48,14 @@ public class HelloController {
         FilteredList<TodoItem> filtered = new FilteredList<>(items);
         onlyUndoneCheck.selectedProperty().addListener((obs, oldValue, onlyUndone) ->
                 filtered.setPredicate(onlyUndone ? item -> !item.isDone() : null));
-        todoList.setItems(filtered);
+        // 追加機能：期限が近い順に並べる（期限なしは最後）
+        // SortedList も「並べ替えて見せる窓」。comparator が null なら元の順番のまま
+        SortedList<TodoItem> sorted = new SortedList<>(filtered);
+        Comparator<TodoItem> byDueDate = Comparator.comparing(
+                TodoItem::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()));
+        sortByDueCheck.selectedProperty().addListener((obs, oldValue, sortByDue) ->
+                sorted.setComparator(sortByDue ? byDueDate : null));
+        todoList.setItems(sorted);
         // 各行をチェックボックス付きで表示し、TodoItem の done とつなぐ
         todoList.setCellFactory(CheckBoxListCell.forListView(TodoItem::doneProperty));
         // 追加機能：ダブルクリックでタイトルを書き換える

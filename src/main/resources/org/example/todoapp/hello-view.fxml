@@ -35,6 +35,7 @@
         <Button text="選択を削除" onAction="#onDelete"/>
         <Button text="完了を片付ける" onAction="#onClearDone"/>
         <CheckBox fx:id="onlyUndoneCheck" text="未完了だけ表示"/>
+        <CheckBox fx:id="sortByDueCheck" text="期限が近い順"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Label fx:id="countLabel"/>
     </HBox>
