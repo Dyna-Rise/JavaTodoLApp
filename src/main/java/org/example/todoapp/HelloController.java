@@ -76,6 +76,11 @@ public class HelloController {
 
     // 「残り ○ 件 / 全 ○ 件」 … Stream API（C# の LINQ）
     private void updateCount() {
+        // 追加機能：0件のときは「やることはありません」と出す
+        if (items.isEmpty()) {
+            countLabel.setText("やることはありません");
+            return;
+        }
         long remaining = items.stream()
                 .filter(item -> !item.isDone())
                 .count();
