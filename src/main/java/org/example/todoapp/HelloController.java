@@ -9,6 +9,8 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.input.MouseButton;
 import javafx.scene.control.cell.CheckBoxListCell;
 
 import java.io.IOException;
@@ -34,6 +36,12 @@ public class HelloController {
         todoList.setItems(items);
         // 各行をチェックボックス付きで表示し、TodoItem の done とつなぐ
         todoList.setCellFactory(CheckBoxListCell.forListView(TodoItem::doneProperty));
+        // 追加機能：ダブルクリックでタイトルを書き換える
+        todoList.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                onEditTitle();
+            }
+        });
         load();          // 段階4：起動時に読み込む
         updateCount();
         // 一覧が変わるたびに、件数の表示と保存をする
@@ -57,6 +65,24 @@ public class HelloController {
         items.add(new TodoItem(text, false));
         inputField.clear();
         inputField.requestFocus();
+    }
+
+    // 選択中の項目のタイトルをダイアログで書き換える
+    private void onEditTitle() {
+        int index = todoList.getSelectionModel().getSelectedIndex();
+        if (index < 0) {
+            return;
+        }
+        TodoItem selected = items.get(index);
+        TextInputDialog dialog = new TextInputDialog(selected.getTitle());
+        dialog.setTitle("タイトルの変更");
+        dialog.setHeaderText(null);
+        dialog.setContentText("新しいタイトル：");
+        dialog.showAndWait()
+                .map(String::trim)
+                .filter(text -> !text.isEmpty())
+                // 差し替えると一覧の表示が更新され、保存も走る
+                .ifPresent(text -> items.set(index, new TodoItem(text, selected.isDone())));
     }
 
     // 選択を削除
