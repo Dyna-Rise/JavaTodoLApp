@@ -8,6 +8,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -19,6 +20,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class HelloController {
@@ -27,6 +30,7 @@ public class HelloController {
     @FXML private Label countLabel;
     @FXML private Label messageLabel;
     @FXML private CheckBox onlyUndoneCheck;
+    @FXML private DatePicker dueDatePicker;
     // 一覧のデータ。チェックの ON/OFF でも「変更あり」と分かるようにしておく
     private final ObservableList<TodoItem> items =
             FXCollections.observableArrayList(item -> new Observable[]{item.doneProperty()});
@@ -70,8 +74,10 @@ public class HelloController {
             return;
         }
         messageLabel.setText("");
-        items.add(new TodoItem(text, false));
+        // 追加機能：期限日（未選択なら null）
+        items.add(new TodoItem(text, false, dueDatePicker.getValue()));
         inputField.clear();
+        dueDatePicker.setValue(null);
         inputField.requestFocus();
     }
 
@@ -91,7 +97,7 @@ public class HelloController {
                 .map(String::trim)
                 .filter(text -> !text.isEmpty())
                 // 差し替えると一覧の表示が更新され、保存も走る
-                .ifPresent(text -> items.set(index, new TodoItem(text, selected.isDone())));
+                .ifPresent(text -> items.set(index, new TodoItem(text, selected.isDone(), selected.getDueDate())));
     }
 
     // 選択を削除
@@ -123,10 +129,13 @@ public class HelloController {
     }
 
     // ===== 段階4：ファイルに保存・読み込み =====
-    // 1行 = 「完了なら1、未完了なら0」＋タブ＋タイトル
+    // 1行 = 「完了なら1、未完了なら0」＋タブ＋期限日（なければ空）＋タブ＋タイトル
+    // 例：0\t2026-12-01\t買い物 ／ 期限なし：0\t\t買い物
     private void save() {
         List<String> lines = items.stream()
-                .map(item -> (item.isDone() ? "1" : "0") + "\t" + item.getTitle())
+                .map(item -> (item.isDone() ? "1" : "0")
+                        + "\t" + (item.getDueDate() == null ? "" : item.getDueDate().toString())
+                        + "\t" + item.getTitle())
                 .toList();
         try {
             Files.write(SAVE_FILE, lines, StandardCharsets.UTF_8);
@@ -142,15 +151,28 @@ public class HelloController {
         try {
             List<TodoItem> loaded = Files.readAllLines(SAVE_FILE, StandardCharsets.UTF_8).stream()
                     .filter(line -> line.contains("\t"))
-                    .map(line -> {
-                        String[] parts = line.split("\t", 2);
-                        return new TodoItem(parts[1], parts[0].equals("1"));
-                    })
+                    .map(this::parseLine)
                     .toList();
             items.setAll(loaded);
         } catch (IOException e) {
             showError("読み込みに失敗しました：" + e.getMessage());
         }
+    }
+
+    // 1行を TodoItem に戻す。期限日を付ける前の形式（完了＋タブ＋タイトル）も読める
+    private TodoItem parseLine(String line) {
+        String[] parts = line.split("\t", 3);
+        boolean done = parts[0].equals("1");
+        if (parts.length == 3) {
+            try {
+                LocalDate due = parts[1].isEmpty() ? null : LocalDate.parse(parts[1]);
+                return new TodoItem(parts[2], done, due);
+            } catch (DateTimeParseException e) {
+                // 2列目が日付でない → 古い形式でタイトルにタブが入っていた
+            }
+        }
+        String[] old = line.split("\t", 2);
+        return new TodoItem(old[1], done);
     }
 
     private void showError(String message) {
