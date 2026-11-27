@@ -21,6 +21,7 @@ public class HelloController {
     @FXML private TextField inputField;
     @FXML private ListView<TodoItem> todoList;
     @FXML private Label countLabel;
+    @FXML private Label messageLabel;
     // 一覧のデータ。チェックの ON/OFF でも「変更あり」と分かるようにしておく
     private final ObservableList<TodoItem> items =
             FXCollections.observableArrayList(item -> new Observable[]{item.doneProperty()});
@@ -47,8 +48,12 @@ public class HelloController {
     private void onAdd() {
         String text = inputField.getText().trim();
         if (text.isEmpty()) {
+            // 追加機能：空欄のまま追加したらメッセージを出す
+            messageLabel.setText("やることを入力してください");
+            inputField.requestFocus();
             return;
         }
+        messageLabel.setText("");
         items.add(new TodoItem(text, false));
         inputField.clear();
         inputField.requestFocus();

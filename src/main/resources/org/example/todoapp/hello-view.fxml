@@ -21,6 +21,9 @@
         <Button text="追加" onAction="#onAdd"/>
     </HBox>
 
+    <!-- 入力チェックのメッセージ（空欄で追加したとき） -->
+    <Label fx:id="messageLabel" style="-fx-text-fill: red;"/>
+
     <!--一覧-->
     <ListView fx:id="todoList" VBox.vgrow="ALWAYS"/>
 
