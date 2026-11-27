@@ -4,8 +4,10 @@ import javafx.beans.Observable;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
@@ -24,6 +26,7 @@ public class HelloController {
     @FXML private ListView<TodoItem> todoList;
     @FXML private Label countLabel;
     @FXML private Label messageLabel;
+    @FXML private CheckBox onlyUndoneCheck;
     // 一覧のデータ。チェックの ON/OFF でも「変更あり」と分かるようにしておく
     private final ObservableList<TodoItem> items =
             FXCollections.observableArrayList(item -> new Observable[]{item.doneProperty()});
@@ -33,7 +36,12 @@ public class HelloController {
     // 画面ができた直後に1回だけ呼ばれる（C# の Form_Load）
     @FXML
     public void initialize() {
-        todoList.setItems(items);
+        // 追加機能：未完了だけ表示するチェックボックス
+        // FilteredList は items を「条件で絞り込んで見せる窓」。元の items はそのまま
+        FilteredList<TodoItem> filtered = new FilteredList<>(items);
+        onlyUndoneCheck.selectedProperty().addListener((obs, oldValue, onlyUndone) ->
+                filtered.setPredicate(onlyUndone ? item -> !item.isDone() : null));
+        todoList.setItems(filtered);
         // 各行をチェックボックス付きで表示し、TodoItem の done とつなぐ
         todoList.setCellFactory(CheckBoxListCell.forListView(TodoItem::doneProperty));
         // 追加機能：ダブルクリックでタイトルを書き換える
@@ -69,11 +77,12 @@ public class HelloController {
 
     // 選択中の項目のタイトルをダイアログで書き換える
     private void onEditTitle() {
-        int index = todoList.getSelectionModel().getSelectedIndex();
-        if (index < 0) {
+        TodoItem selected = todoList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
             return;
         }
-        TodoItem selected = items.get(index);
+        // 絞り込み中は画面の行番号と items の位置がずれるので、items 側の位置を探す
+        int index = items.indexOf(selected);
         TextInputDialog dialog = new TextInputDialog(selected.getTitle());
         dialog.setTitle("タイトルの変更");
         dialog.setHeaderText(null);
